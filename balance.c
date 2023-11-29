@@ -9,8 +9,14 @@
 #define L_MAX 1000
 #define D_MIN 100
 #define D_MAX 1000 
-#define MAX_CYCLES 10000000 // Max number of cycles to run 
-#define BALANCED_LOAD_THRESHOLD 0.1 //percent
+#define MAX_CYCLES 1000000 // Max number of cycles to run 
+#define BALANCED_LOAD_THRESHOLD 0.01 //percent 2, 1, 0.1, 0.01
+
+struct Processor *first = NULL;
+unsigned long global_cycles = 0;
+unsigned long totalLoad = 0;
+unsigned balancedLoad = 0;
+int iterations = 0;
 
 int getUniformlyRandomLoadUnits(){
     return rand() % (L_MAX - L_MIN + 1) + L_MIN;
@@ -30,16 +36,10 @@ struct Processor{
     struct Processor *right;
 };
 
-struct Processor *first = NULL;
-unsigned int global_cycles = 0;
-unsigned long totalLoad = 0;
-unsigned balancedLoad = 0;
-int iterations = 0;
-
 struct Processor* getNextProcessor(struct Processor *proc)
 {
-    struct Processor *curr = proc->right, *next = curr;
-    while(curr != proc)
+    struct Processor *curr = proc->right, *next = proc->right;
+    while(curr != NULL && curr != proc)
     {
         if(next->nextLoadBalanceTime > curr->nextLoadBalanceTime)
             next = curr;
@@ -68,8 +68,9 @@ struct Processor* createNewProcessor(int position)
 
 void printAllProcs()
 {
+    printf("Position = %d, Load = %d\n", first->position, first->loadUnits);
     struct Processor *curr = first->right;
-    while(curr != first)
+    while(curr != NULL && curr != first)
     {
         printf("Position = %d, Load = %d\n", curr->position, curr->loadUnits);
         curr = curr->right;
@@ -98,6 +99,8 @@ void initializeRingSystem(int k)
     }
 
     balancedLoad = totalLoad * (BALANCED_LOAD_THRESHOLD / 100);
+    if(balancedLoad > totalLoad / k)
+        balancedLoad = balancedLoad/10;
     if(balancedLoad < 1)
         balancedLoad = 1;
 }
@@ -107,10 +110,14 @@ bool isLoadDistributedUniformly()
     struct Processor *curr = first;
     do
     {
-        if(abs(curr->loadUnits - curr->left->loadUnits) > balancedLoad || abs(curr->loadUnits - curr->right->loadUnits) > balancedLoad)
+        if((curr->left != NULL && abs(curr->loadUnits - curr->left->loadUnits) > balancedLoad)
+            || (curr->right != NULL && abs(curr->loadUnits - curr->right->loadUnits) > balancedLoad))
+        {
             return false;
+        }
         curr = curr->right;
-    } while(curr != first);
+    } while(curr != NULL && curr != first);
+
     return true;
 }
 
@@ -146,11 +153,11 @@ void performLoadBalancingActivity(int k)
 {
     struct Processor *curr = first;
     
-    while(!isLoadDistributedUniformly() || global_cycles < MAX_CYCLES)
+    while(global_cycles < MAX_CYCLES && !isLoadDistributedUniformly())
     {
         iterations++;
         balanceLoad(curr);
-        global_cycles += curr->nextLoadBalanceTime;
+        global_cycles = curr->nextLoadBalanceTime;
         curr->nextLoadBalanceTime += getUniformlyRandomNextActivityTime();
         curr = getNextProcessor(curr);
     }
@@ -159,9 +166,9 @@ void performLoadBalancingActivity(int k)
 int main(int argc, char **argv){
     if (argc < 2) 
     {
-        printf("Usage: %p <k>\n", argv[0]);
+        printf("Usage: %s <k>\n", argv[0]);
         printf("k    : Number of processors in the system and k should be > 0\n");
-        printf("Additionaly 'v' can be used to show the verbose results. Usage: %p <k> v\n", argv[0]);
+        printf("Additionaly 'v' can be used to show the verbose results. Usage: %s <k> v\n", argv[0]);
         exit(1);
     }
     int k = atoi(argv[1]);
@@ -173,15 +180,39 @@ int main(int argc, char **argv){
     bool verbose = false;
     srand(time(0)); //Init seed for random numbers
 
-    if(argc == 3 && (*(argv[2]) == 'v' ||  *(argv[2]) == 'V'))
-        verbose = true;
+    if(argc == 3)
+    {
+        if(*argv[2] == 'v' ||  *argv[2] == 'V')
+            verbose = true;
+        else{
+            printf("Second argument can be either 'v' or 'V'.\n");
+            exit(1);
+        }
+    }
 
     initializeRingSystem(k);
-    //printAllProcs();
+    if(verbose)
+    {
+        printf("System Configuration before load balancing:\n");
+        printAllProcs();
+
+        printf("\nTotal Load = %lu\n", totalLoad);
+        printf("Max Balanced Load Difference = %d\n\n", balancedLoad);
+    }
+
+    printf("\nTotal Load = %lu\n", totalLoad);
+        printf("Max Balanced Load Difference = %d\n\n", balancedLoad);
+
     performLoadBalancingActivity(k);
-    printf("Cycles = %d\n", global_cycles);
-    printf("Iterations = %d\n", iterations);
-    printAllProcs();
+    
+    if(verbose)
+    {
+        printf("System Configuration after load balancing:\n");
+        printAllProcs();
+    }
+
+    printf("\nTime Cycles = %lu\n", global_cycles);
+    printf("Total load balancing activitied = %d\n", iterations);
 
     
     return 0;
