@@ -10,7 +10,7 @@
 #define D_MIN 100
 #define D_MAX 1000 
 #define MAX_CYCLES 1000000 // Max number of cycles to run 
-#define BALANCED_LOAD_THRESHOLD 0.01 //percent 2, 1, 0.1, 0.01
+#define BALANCED_LOAD_THRESHOLD 0.01 //percent 5.0, 2.0, 1.0, 0.1, 0.5, 0.01
 #define RUNS 5
 
 //first proc in the ring system
@@ -117,7 +117,7 @@ void initializeRingSystem(int k)
         first->left = newProc;
     }
 
-    balancedLoad = totalLoad * (BALANCED_LOAD_THRESHOLD / 100);
+    balancedLoad = totalLoad * (BALANCED_LOAD_THRESHOLD / 100.0);
     if(balancedLoad > totalLoad / k)
         balancedLoad = balancedLoad/10;
     if(balancedLoad < 1)
@@ -294,6 +294,8 @@ int main(int argc, char **argv){
     printf("Average Load = %llu\n", totalSystemLoad/RUNS);
     printf("Average Time Cycles = %llu\n", totalCycles/RUNS);
     printf("Average Total load balancing activities = %llu\n\n", totalIterations/RUNS);
+
+    //printf("%f, %d, %llu, %llu, %llu\n", BALANCED_LOAD_THRESHOLD, k, totalSystemLoad/RUNS, totalCycles/RUNS, totalIterations/RUNS);
     
     return 0;
 }
