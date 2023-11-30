@@ -11,6 +11,7 @@
 #define D_MAX 1000 
 #define MAX_CYCLES 1000000 // Max number of cycles to run 
 #define BALANCED_LOAD_THRESHOLD 0.01 //percent 2, 1, 0.1, 0.01
+#define RUNS 5
 
 //first proc in the ring system
 struct Processor *first = NULL;
@@ -123,6 +124,26 @@ void initializeRingSystem(int k)
         balancedLoad = 1;
 }
 
+void disposeRingSystem(int k)
+{
+    struct Processor *curr = first->right, *prev = first;
+    while(curr != NULL && curr != first)
+    {
+        prev->right = NULL;
+        struct Processor *next = curr->right;
+        free(curr);
+        next->left = NULL;
+        curr = next;
+    }
+    free(first);
+    first = NULL;
+
+    global_cycles = 0;
+    totalLoad = 0;
+    balancedLoad = 0;
+    iterations = 0;
+}
+
 /*
 Returns true if steady state is achieved in the system.
 Steady state means all the load is distributed uniformly.
@@ -233,28 +254,46 @@ int main(int argc, char **argv){
         }
     }
 
-    initializeRingSystem(k);
-    if(verbose)
-    {
-        printf("System Configuration before load balancing:\n");
-        printAllProcs();
+    unsigned long long totalCycles = 0;
+    unsigned long long totalIterations = 0;
+    unsigned long long totalSystemLoad = 0;
 
-        printf("\nTotal Load = %lu\n", totalLoad);
-        printf("Max Balanced Load Difference = %d\n\n", balancedLoad);
+    for(int i = 1; i <= RUNS; i++)
+    {
+        printf("----Run %d----\n", i);
+        initializeRingSystem(k);
+        if(verbose)
+        {
+            printf("System Configuration before load balancing:\n");
+            printAllProcs();
+            printf("\nMax Balanced Load Difference = %d\n", balancedLoad);
+        }
+
+        performLoadBalancing(k);
+        
+        if(verbose)
+        {
+            printf("\nSystem Configuration after load balancing:\n");
+            printAllProcs();
+            printf("\n");
+        }
+
+        printf("Total Load = %lu\n", totalLoad);
+        printf("Time Cycles = %lu\n", global_cycles);
+        printf("Total load balancing activities = %d\n", iterations);
+
+        totalSystemLoad += totalLoad;
+        totalCycles += global_cycles;
+        totalIterations += iterations;
+
+        disposeRingSystem(k);
+        printf("\n");
     }
 
-    performLoadBalancing(k);
-    
-    if(verbose)
-    {
-        printf("System Configuration after load balancing:\n");
-        printAllProcs();
-    }
-
-    printf("\nTotal Load = %lu\n", totalLoad);
-    printf("Time Cycles = %lu\n", global_cycles);
-    printf("Total load balancing activities = %d\n", iterations);
-
+    printf("\n**** Averaged Data *****\n");
+    printf("Average Load = %llu\n", totalSystemLoad/RUNS);
+    printf("Average Time Cycles = %llu\n", totalCycles/RUNS);
+    printf("Average Total load balancing activities = %llu\n\n", totalIterations/RUNS);
     
     return 0;
 }
