@@ -12,20 +12,30 @@
 #define MAX_CYCLES 1000000 // Max number of cycles to run 
 #define BALANCED_LOAD_THRESHOLD 0.01 //percent 2, 1, 0.1, 0.01
 
+//first proc in the ring system
 struct Processor *first = NULL;
 unsigned long global_cycles = 0;
 unsigned long totalLoad = 0;
 unsigned balancedLoad = 0;
 int iterations = 0;
 
+/*
+Returns random number of load units
+*/
 int getUniformlyRandomLoadUnits(){
     return rand() % (L_MAX - L_MIN + 1) + L_MIN;
 }
 
+/*
+Returns random next time cycle for running load balancing activity
+*/
 int getUniformlyRandomNextActivityTime(){
     return rand() % (D_MAX - D_MIN + 1) + D_MIN;
 }
 
+/*
+Represents processor in the system
+*/
 struct Processor{
     int position;
     int loadUnits;
@@ -36,6 +46,10 @@ struct Processor{
     struct Processor *right;
 };
 
+/*
+Returns next processor starting from given proc's right neighor,
+who has lowest nextLoadBalanceTime value.
+*/
 struct Processor* getNextProcessor(struct Processor *proc)
 {
     struct Processor *curr = proc->right, *next = proc->right;
@@ -43,10 +57,8 @@ struct Processor* getNextProcessor(struct Processor *proc)
     {
         if(next->nextLoadBalanceTime > curr->nextLoadBalanceTime)
             next = curr;
-
         curr = curr->right;
     }
-
     return next;
 }
 
@@ -66,6 +78,9 @@ struct Processor* createNewProcessor(int position)
     return proc;
 }
 
+/*
+Helper function to print all the processors with their assigned Load Units
+*/
 void printAllProcs()
 {
     printf("Position = %d, Load = %d\n", first->position, first->loadUnits);
@@ -77,6 +92,9 @@ void printAllProcs()
     }
 }
 
+/*
+Ring system initializer
+*/
 void initializeRingSystem(int k)
 {
     first = createNewProcessor(0);
@@ -105,7 +123,12 @@ void initializeRingSystem(int k)
         balancedLoad = 1;
 }
 
-bool isLoadDistributedUniformly()
+/*
+Returns true if steady state is achieved in the system.
+Steady state means all the load is distributed uniformly.
+This is calculated using global knowledge.
+*/
+bool isSteadyStateAchieved()
 {
     struct Processor *curr = first;
     do
@@ -121,42 +144,62 @@ bool isLoadDistributedUniformly()
     return true;
 }
 
-void balanceLoad(struct Processor *proc)
+/*
+Shifts the load from proc to given neighbor proc
+*/
+bool shiftLoad(struct Processor *proc, struct Processor *neighbor, unsigned long averageLoadUnits)
 {
-    unsigned long total = proc->loadUnits + proc->left->loadUnits + proc->right->loadUnits;
+    bool isLoadShifted = false;
+    if (neighbor->loadUnits < averageLoadUnits)
+    {
+        unsigned extraLoadUnits = proc->loadUnits - averageLoadUnits;
+        int capacityToTakeLoadUnits = averageLoadUnits - neighbor->loadUnits;
+        int shifts = extraLoadUnits < capacityToTakeLoadUnits ? extraLoadUnits : capacityToTakeLoadUnits;
+        neighbor->loadUnits  += shifts;
+        proc->loadUnits -= shifts;
+        extraLoadUnits -= shifts;
+    }
+    return isLoadShifted;
+}
+
+/*
+Balances load of given processor by using local knowledge of neighboring processors
+*/
+bool balanceLoad(struct Processor *proc)
+{
+    bool isLoadShifted = false;
+
+    unsigned long total = proc->loadUnits;
+
+    if(proc->left != NULL)
+        total += proc->left->loadUnits;
+    if(proc->right != NULL)
+        total += proc->right->loadUnits;
+
     unsigned long averageLoadUnits = total/3;
 
     if(proc->loadUnits > averageLoadUnits)
     {
-        unsigned giveAway = proc->loadUnits - averageLoadUnits;
-        if (proc->left->loadUnits < averageLoadUnits) 
-        {
-            int needs = averageLoadUnits - proc->left->loadUnits;
-            int intransit = giveAway < needs ? giveAway : needs;
-            proc->left->loadUnits  += intransit;
-            proc->loadUnits -= intransit;
-            giveAway -= intransit;
-        }
-
-        if (proc->right->loadUnits < averageLoadUnits) 
-        {
-            int needs = averageLoadUnits - proc->right->loadUnits;
-            int intransit = giveAway < needs ? giveAway : needs;
-            proc->right->loadUnits  += intransit;
-            proc->loadUnits -= intransit;
-            giveAway -= intransit;
-        }
+        if(proc->left != NULL)
+            isLoadShifted = shiftLoad(proc, proc->left, averageLoadUnits);
+        if(proc->right != NULL)
+            isLoadShifted = shiftLoad(proc, proc->right, averageLoadUnits) || isLoadShifted;
     }
+    return isLoadShifted;
 }
 
-void performLoadBalancingActivity(int k)
+/*
+Main loop in which keeps tracks of time cycles and checks if steady state is achieved or not
+*/
+void performLoadBalancing(int k)
 {
     struct Processor *curr = first;
+    bool isLoadShifted = true;
     
-    while(global_cycles < MAX_CYCLES && !isLoadDistributedUniformly())
+    while(global_cycles < MAX_CYCLES && (isLoadShifted || !isSteadyStateAchieved()))
     {
         iterations++;
-        balanceLoad(curr);
+        isLoadShifted = balanceLoad(curr);
         global_cycles = curr->nextLoadBalanceTime;
         curr->nextLoadBalanceTime += getUniformlyRandomNextActivityTime();
         curr = getNextProcessor(curr);
@@ -200,10 +243,7 @@ int main(int argc, char **argv){
         printf("Max Balanced Load Difference = %d\n\n", balancedLoad);
     }
 
-    printf("\nTotal Load = %lu\n", totalLoad);
-        printf("Max Balanced Load Difference = %d\n\n", balancedLoad);
-
-    performLoadBalancingActivity(k);
+    performLoadBalancing(k);
     
     if(verbose)
     {
