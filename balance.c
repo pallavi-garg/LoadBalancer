@@ -251,8 +251,9 @@ int main(int argc, char **argv){
         printAllProcs();
     }
 
-    printf("\nTime Cycles = %lu\n", global_cycles);
-    printf("Total load balancing activitied = %d\n", iterations);
+    printf("\nTotal Load = %lu\n", totalLoad);
+    printf("Time Cycles = %lu\n", global_cycles);
+    printf("Total load balancing activities = %d\n", iterations);
 
     
     return 0;
