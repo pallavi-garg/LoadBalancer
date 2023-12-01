@@ -216,13 +216,20 @@ Balances load of given processor by using local knowledge of neighboring process
 void balanceLoad(struct Processor *proc)
 {
     unsigned long total = proc->loadUnits;
+    int divisor = 1;
 
     if(proc->left != NULL)
+    {
         total += proc->left->loadUnits;
+        divisor++;
+    }
     if(proc->right != NULL)
+    {
         total += proc->right->loadUnits;
+        divisor++;
+    }
 
-    unsigned long averageLoadUnits = total/3;
+    unsigned long averageLoadUnits = total/divisor;
 
     if(proc->loadUnits > averageLoadUnits)
     {
