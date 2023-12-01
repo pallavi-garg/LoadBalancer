@@ -10,9 +10,9 @@
 #define D_MIN 100
 #define D_MAX 1000 
 #define MAX_CYCLES 1000000 // Max number of cycles to run 
-#define BALANCED_LOAD_THRESHOLD 0.0001 //0.1%
-#define STEADY_STATE_THRESHOLD 0.02 //1%
-#define RUNS 5
+#define BALANCED_LOAD_THRESHOLD 0.01 //0.1%
+#define STEADY_STATE_THRESHOLD 0.02 //2%
+#define RUNS 1
 
 //first proc in the ring system
 struct Processor *first = NULL;
@@ -91,15 +91,13 @@ void initializeRingSystem(int k)
         first->left = newProc;
     }
 
-    balancedLoad = totalLoad * BALANCED_LOAD_THRESHOLD;
-    if(balancedLoad > totalLoad / k)
-        balancedLoad = balancedLoad/10;
+    balancedLoad = (unsigned int)(totalLoad / k) * BALANCED_LOAD_THRESHOLD;
+    //if(balancedLoad > totalLoad / k)
+        //balancedLoad = balancedLoad/10;
     if(balancedLoad < 1)
         balancedLoad = 1;
 
     maxUnSteadyProcs = k * STEADY_STATE_THRESHOLD;
-    if(maxUnSteadyProcs < 1)
-        maxUnSteadyProcs = 1;
 }
 
 /*
@@ -285,9 +283,9 @@ int main(int argc, char **argv){
         }
     }
     
-    int arr[] = {5, 10, 15, 20, 25, 30, 40, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000};
+    int arr[] = {5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 80, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000};
 
-    for(int j = 0; j <= 26; j++)
+    for(int j = 0; j <= 29; j++)
     {
         k = arr[j];
     unsigned long long totalCycles = 0;
@@ -337,7 +335,7 @@ int main(int argc, char **argv){
     printf("Average Time Cycles = %llu\n", totalCycles/RUNS);
     printf("Average Total load balancing activities = %llu\n\n", totalIterations/RUNS);
     */
-    printf("%f, %d, %llu, %d, %llu, %llu, %llu, %d, %lu\n", BALANCED_LOAD_THRESHOLD, k, totalCycles/RUNS, k,totalIterations/RUNS, totalSystemLoad/RUNS, avgbalancedLoad/RUNS, unbalancedProcs/RUNS, unbalancedLoads/RUNS);
+    printf("%f, %f, %d, %llu, %d, %llu, %llu, %llu, %d, %lu\n", BALANCED_LOAD_THRESHOLD, STEADY_STATE_THRESHOLD, k, totalCycles/RUNS, k,totalIterations/RUNS, totalSystemLoad/RUNS, avgbalancedLoad/RUNS, unbalancedProcs/RUNS, unbalancedLoads/RUNS);
     
     }
     return 0;
