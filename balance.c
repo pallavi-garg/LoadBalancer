@@ -206,7 +206,6 @@ void shiftLoad(struct Processor *proc, struct Processor *neighbor, unsigned long
         int shifts = extraLoadUnits < capacityToTakeLoadUnits ? extraLoadUnits : capacityToTakeLoadUnits;
         neighbor->loadUnits  += shifts;
         proc->loadUnits -= shifts;
-        extraLoadUnits -= shifts;
     }
 }
 
