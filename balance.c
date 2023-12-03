@@ -10,8 +10,8 @@
 #define D_MIN 100
 #define D_MAX 1000 
 #define MAX_CYCLES 1000000 // Max number of cycles to run 
-#define BALANCED_LOAD_THRESHOLD 0.01 //0.1%
-#define STEADY_STATE_THRESHOLD 0.02 //2%
+#define BALANCED_LOAD_THRESHOLD 0.02 //0.1%
+#define STEADY_STATE_THRESHOLD 0.05 //2%
 #define RUNS 1
 
 //first proc in the ring system
@@ -244,15 +244,15 @@ void performLoadBalancing(int k)
 {
     struct Processor *curr = first;
     
-    while(global_cycles < MAX_CYCLES)
+    while(curr != NULL && curr->nextLoadBalanceTime <= MAX_CYCLES)
     {
         iterations++;
         balanceLoad(curr);
         global_cycles = curr->nextLoadBalanceTime;
-        curr->nextLoadBalanceTime += getUniformlyRandomNextActivityTime();
-        curr = getNextProcessor(curr);
         if(isSteadyStateAchieved())
             break;
+        curr->nextLoadBalanceTime += getUniformlyRandomNextActivityTime();
+        curr = getNextProcessor(curr);
     }
 }
 
@@ -283,11 +283,9 @@ int main(int argc, char **argv){
         }
     }
     
-    int arr[] = {5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 80, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000};
-
-    for(int j = 0; j <= 29; j++)
+    for(int j = 100; j <= 100; j+=15)
     {
-        k = arr[j];
+        k = j;
     unsigned long long totalCycles = 0;
     unsigned long long totalIterations = 0;
     unsigned long long totalSystemLoad = 0;
