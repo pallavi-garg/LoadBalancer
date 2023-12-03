@@ -10,8 +10,8 @@
 #define D_MIN 100
 #define D_MAX 1000 
 #define MAX_CYCLES 1000000 // Max number of cycles to run 
-#define BALANCED_LOAD_THRESHOLD 0.02 //0.1%
-#define STEADY_STATE_THRESHOLD 0.05 //2%
+#define BALANCED_LOAD_THRESHOLD 0.02 //2%
+#define STEADY_STATE_THRESHOLD 0.05 //5%
 #define RUNS 1
 
 //first proc in the ring system
@@ -121,13 +121,11 @@ Helper function to print all the processors with their assigned Load Units
 */
 void printAllProcs()
 {
-    //printf("Position = %d, Load = %d\n", first->position, first->loadUnits);
-    printf("%d\n", first->loadUnits);
+    printf("Position = %d, Load = %d\n", first->position, first->loadUnits);
     struct Processor *curr = first->right;
     while(curr != NULL && curr != first)
     {
-        //printf("Position = %d, Load = %d\n", curr->position, curr->loadUnits);
-        printf("%d\n", curr->loadUnits);
+        printf("Position = %d, Load = %d\n", curr->position, curr->loadUnits);
         curr = curr->right;
     }
 }
@@ -183,11 +181,8 @@ bool isSteadyStateAchieved()
 
     } while(curr != NULL && curr != first);
 
-    if(unbalancedProcs <= maxUnSteadyProcs)
-    {
-        unbalancedProcsDuringConvergence = unbalancedProcs;
-        unbalancedLoadDuringConvergence = unbalancedLoad;
-    }
+    unbalancedProcsDuringConvergence = unbalancedProcs;
+    unbalancedLoadDuringConvergence = unbalancedLoad;
 
     return unbalancedProcs <= maxUnSteadyProcs;
 }
@@ -283,58 +278,30 @@ int main(int argc, char **argv){
         }
     }
     
-    for(int j = 100; j <= 100; j+=15)
-    {
-        k = j;
-    unsigned long long totalCycles = 0;
-    unsigned long long totalIterations = 0;
-    unsigned long long totalSystemLoad = 0;
-    unsigned long long avgbalancedLoad = 0;
-    unsigned long unbalancedLoads = 0;
-    int unbalancedProcs = 0;
     srand(time(0)); //Init seed for random numbers
-    for(int i = 1; i <= RUNS; i++)
+    initializeRingSystem(k);
+    if(verbose)
     {
-        
-        //printf("----Run %d----\n", i);
-        initializeRingSystem(k);
-        if(verbose)
-        {
-            printf("System Configuration before load balancing:\n");
-            printAllProcs();
-            printf("\nMax Balanced Load Difference = %d\n", balancedLoad);
-        }
-        performLoadBalancing(k);
-        
-        if(verbose)
-        {
-            printf("\nSystem Configuration after load balancing:\n");
-            printAllProcs();
-            printf("\n");
-        }
-
-        //printf("Total Load = %lu\n", totalLoad);
-        //printf("Time Cycles = %lu\n", global_cycles);
-        //printf("Total load balancing activities = %d\n", iterations);
-
-        totalSystemLoad += totalLoad;
-        totalCycles += global_cycles;
-        totalIterations += iterations;
-        avgbalancedLoad += balancedLoad;
-        unbalancedProcs += unbalancedProcsDuringConvergence;
-        unbalancedLoads += unbalancedLoadDuringConvergence;
-
-        disposeRingSystem(k);
-        //printf("\n");
+        printf("***System Configuration before load balancing***\n");
+        printAllProcs();
+        printf("\nMax load difference between two neighbors: %d\n", balancedLoad);
+        printf("Max unbalanced processors allowed in the system: %d\n", maxUnSteadyProcs);
     }
-    /*
-    printf("\n**** Averaged Data *****\n");
-    printf("Average Load = %llu\n", totalSystemLoad/RUNS);
-    printf("Average Time Cycles = %llu\n", totalCycles/RUNS);
-    printf("Average Total load balancing activities = %llu\n\n", totalIterations/RUNS);
-    */
-    printf("%f, %f, %d, %llu, %d, %llu, %llu, %llu, %d, %lu\n", BALANCED_LOAD_THRESHOLD, STEADY_STATE_THRESHOLD, k, totalCycles/RUNS, k,totalIterations/RUNS, totalSystemLoad/RUNS, avgbalancedLoad/RUNS, unbalancedProcs/RUNS, unbalancedLoads/RUNS);
-    
+    performLoadBalancing(k);
+    if(verbose)
+    {
+        printf("\n***System Configuration after load balancing***\n");
+        printAllProcs();
+        printf("Unbalanced processors after load balancing finished: %d\n", unbalancedProcsDuringConvergence);
+        printf("Unbalanced load units after load balancing finished: %lu\n", unbalancedLoadDuringConvergence);
+        printf("\n");
     }
+
+    printf("Total load units: %lu\n", totalLoad);
+    printf("Time cycles: %lu\n", global_cycles);
+    printf("Load balancing activities performed: %d\n", iterations);
+
+    disposeRingSystem(k);
+
     return 0;
 }
