@@ -92,8 +92,6 @@ void initializeRingSystem(int k)
     }
 
     balancedLoad = (unsigned int)(totalLoad / k) * BALANCED_LOAD_THRESHOLD;
-    //if(balancedLoad > totalLoad / k)
-        //balancedLoad = balancedLoad/10;
     if(balancedLoad < 1)
         balancedLoad = 1;
 
